@@ -1,30 +1,36 @@
 ---
 title: "VDA_FootballData"
 author: "Alina Abdel Nour Saad (885080), Finn Kock (883513), Annika Zepp (884717)"
-date: "`r Sys.Date()`"
-output: html_document
+date: 2023-06-12
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+---
+# Einführung
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+// TODO Text aus Expose? ####
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+**Auszug aus dem Datensatz**
 
-```{r cars}
-summary(cars)
+```{r, results='asis', echo = FALSE, message=FALSE}
+library(knitr)
+library(dplyr)
+library(DT)
+
+#Datei einlesen
+understat <- read.csv("data/understat.com.csv")
+
+#Spalten umbenennen
+colnames(understat) <- c('UEFA League', 'Jahr','Platzierung', 'Mannschaft', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'Verschossen', 'Punkte')
+# TODO Spaltennamen hinzufügen####
+
+# Auszug anzeigen - ersten 30 Zeilen
+datatable(head(understat, 30), options = list(scrollX = TRUE))
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
