@@ -6,6 +6,7 @@ output:
   html_document:
     toc: true
     toc_float: true
+    theme: paper
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +29,7 @@ library(DT)
 understat <- read.csv("data/understat.com.csv")
 
 #Spalten umbenennen
-colnames(understat) <- c('UEFA League', 'Jahr','Platzierung', 'Mannschaft', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'Verschossen', 'Punkte')
+colnames(understat) <- c('Liga', 'Jahr','Platzierung', 'Mannschaft', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'Verschossen', 'Punkte','expected Goals', 'expected Goals difference', 'Expected goals without penalties and own goals','Expected goals against', 'Difference between expected goals against and missed', 'Expected goals against without penalties and own goals','The difference between "for" and "against" expected goals without penalties and own goals', 'Passes allowed per defensive action in the opposition half','Opponent passes allowed per defensive action in the opposition half','Passes completed within an estimated 20 yards of goal (crosses excluded)', 'Opponent passes completed within an estimated 20 yards of goal (crosses excluded)', 'Expected points','Difference between actual and expected points')
 # TODO Spaltennamen hinzufügen####
 
 # Auszug anzeigen - ersten 30 Zeilen
