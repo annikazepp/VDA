@@ -32,9 +32,22 @@ understat <- read.csv("data/understat.com.csv")
 colnames(understat) <- c('League', 'Year', 'Position', 'Team', 'matches', 'wins', 'draws', 'loses', 'scored', 'conceded', 'Points', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
 #colnames(understat) <- c('League', 'Year of season start','Position', 'Team name', 'Amount of games played', 'Amount of wins', 'Amount of draws', 'Amount of loses', 'Goals scored', 'Goals conceded', 'Points','expected Goals', 'expected Goals difference', 'Expected goals without penalties and own goals','Expected goals against', 'Difference between expected goals against and missed', 'Expected goals against without penalties and own goals','The difference between "for" and "against" expected goals without penalties and own goals', 'Passes allowed per defensive action in the opposition half','Opponent passes allowed per defensive action in the opposition half','Passes completed within an estimated 20 yards of goal (crosses excluded)', 'Opponent passes completed within an estimated 20 yards of goal (crosses excluded)', 'Expected points','Difference between actual and expected points')
 
-
 # TODO Spaltennamen hinzufügen####
 
 # Auszug anzeigen - ersten 30 Zeilen
-datatable(head(understat, 30), options = list(scrollX = TRUE))
+datatable(head(understat, 30), options = list(scrollX = TRUE, columnDefs = list(
+    list(
+      targets = 1,
+      render = JS(
+        "function(data, type, full, meta) {",
+        "  if (type === 'display') {",
+        "    return '<span title="' + full[1] + '">' + data + '</span>';",
+        "  } else {",
+        "    return data;",
+        "  }",
+        "}"
+      )
+    )
+  )
+))
 ```
