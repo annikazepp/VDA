@@ -19,7 +19,7 @@ library(DT)
 library(ggbump)
 library(ggplot2)
 library(plotly)
-library(tidyverse)
+#library(tidyverse)
 library(wesanderson)
 library(RColorBrewer)
 
@@ -42,7 +42,7 @@ understat <- read.csv("data/understat.com.csv")
 
 
 #Spalten umbenennen
-colnames(understat) <- c('Liga', 'Jahr', 'Platzierung', 'Team', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'conceded', 'Punkte', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
+colnames(understat) <- c('Liga', 'Jahr', 'Platzierung', 'Team', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'Gegentore', 'Punkte', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
 
 understat <- mutate(understat, Liga = replace(Liga, Liga == "La_liga", "La Liga"))
 understat <- mutate(understat, Liga = replace(Liga, Liga == "Ligue_1", "Ligue 1"))
@@ -686,37 +686,31 @@ ggplotly(time_xG_plot)
 
 
 
-## Beste Mannschaft 2014
-
-BlaBla
-
-## Effektivster Spielstil
-Wurde 2014 aggressives Pressing belohnt oder waren Teams hauptsächlich durch defensive Stabilität
-erfolgreich?
-Welche Mannschaften waren besonders ineffizient und welche haben unerwartet oft
-getroffen?
 
 
-## deutsche WM Sieg und Championsleague Titelvon Real Madrid
+# Projektrückblick und Dokumentation
 
-
-
-
-# Muss noch rein
-
-## kurze Betrachtung der verwendeten Werkzeuge
+## Verwendeten Werkzeuge
 Welche + Warum + Schwächen + Stärken
+
+**RStudio** erleichtert die Entwicklung mit R und unterstützt die Organisation und die Verwaltung von R-Projekten. Durch die Unterstützung von R Markdown, können leicht Dokumente erstellt werden, die  R-Code, Text und Grafiken kombinieren.
+Zudem war die Integration von Git für dieses Projekt essentiell. (Als schwierig gestaltete sich jedoch der Umgang mit Git-Konflikten. RStudio bietet keinen Workflow, um Konflikte zu lösen und so mussten von Hand die von Git markierten Konflikte im Code behoben werden.) 
+
+**Plotly**/ **ggplotly** (?) ermöglicht die Erstellung von interaktiven Grafiken in denen die Benutzer mit den Daten interagieren können, z. B. kann gezoomed, verschoben oder Datenpunkte ausgewählt werden. Da wir große Datenmengen zu Grafiken verarbeiteten, war diese Interaktivität der ausschlaggebende Punkt, uns gegen ggplot zu entscheiden.
+
+**Git** haben wir als Versionskontrollsystem genutzt. Durch die Integration konnte jedes Teammitglied eigenständig an unserem Projekt arbeiten und der Fortschritt konnte leich synchronisiert werden. Auch das versehentliche Überschreiben oder Löschen von Code wurde durch Git effektiv verhindert.
+
+Sonstige?
 
 
 ## kritischer Rückblick
-würden Sie mit dem Wissen nach dem Projekt
-andere Ansätze vorziehen?
+würden Sie mit dem Wissen nach dem Projek andere Ansätze vorziehen?
 
 ## verworfene Lösungsansätze
-gab es Lösungsansätze, die Sie verworfen haben? Wenn ja, beschreiben Sie
-diese Ansätze und erläutern Sie die Gründe, warum Sie sie nicht mehr weiter
-verfolgt haben!
+gab es Lösungsansätze, die Sie verworfen haben? Wenn ja, beschreiben Sie diese Ansätze und erläutern Sie die Gründe, warum Sie sie nicht mehr weiter verfolgt haben!
+
+## Arbeitszeit in Stunden
 
 ## Literatur und Quellen
 
-## Arbeitszeit in Stunden
+
