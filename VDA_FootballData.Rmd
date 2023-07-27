@@ -42,7 +42,7 @@ understat <- read.csv("data/understat.com.csv")
 
 
 #Spalten umbenennen
-colnames(understat) <- c('Liga', 'Jahr', 'Platzierung', 'Team', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'Gegentore', 'Punkte', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
+colnames(understat) <- c('Liga', 'Jahr', 'Platzierung', 'Team', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'vergebene Chancen', 'Punkte', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
 
 understat <- mutate(understat, Liga = replace(Liga, Liga == "La_liga", "La Liga"))
 understat <- mutate(understat, Liga = replace(Liga, Liga == "Ligue_1", "Ligue 1"))
