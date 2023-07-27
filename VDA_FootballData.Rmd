@@ -1,7 +1,7 @@
 ---
 title: "VDA_FootballData"
 author: "Alina Abdel Nour Saad (885080), Finn Kock (883513), Annika Zepp (884717)"
-date: 2023-06-12
+date: 28.07.2023
 output: 
   html_document:
     toc: true
@@ -11,43 +11,712 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 
+# Bibliotheken laden
+library(knitr)
+library(dplyr)
+library(DT)
+library(ggbump)
+library(ggplot2)
+library(plotly)
+library(tidyverse)
+library(wesanderson)
+library(RColorBrewer)
+
+```
 ---
 # Einführung
+Unsere Projektarbeit befasst sich mit zwei Datensätzen des Publishers "understat". Der Schwerpunkt liegt auf einem Datensatz, der eine Ligaübersicht aus dem Jahre 2014 der 5 größten
+und der russischen Liga beinhaltet. Interessant sind dabei Daten, die anhand von
+Parametern die Spielstärke jeder Mannschaft festhalten.
+Zur Erweiterung unserer Statistiken nutzen wir außerdem einen Datensatz jedes einzelnen
+Spiels der oben genannten Ligen der Jahre 2014 - 2019.
 
-// TODO Text aus Expose? ####
+
 
 **Auszug aus dem Datensatz**
 
 ```{r, results='asis', echo = FALSE, message=FALSE}
-library(knitr)
-library(dplyr)
-library(DT)
-
 #Datei einlesen
 understat <- read.csv("data/understat.com.csv")
 
-#Spalten umbenennen
-colnames(understat) <- c('League', 'Year', 'Position', 'Team', 'matches', 'wins', 'draws', 'loses', 'scored', 'conceded', 'Points', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
-#colnames(understat) <- c('League', 'Year of season start','Position', 'Team name', 'Amount of games played', 'Amount of wins', 'Amount of draws', 'Amount of loses', 'Goals scored', 'Goals conceded', 'Points','expected Goals', 'expected Goals difference', 'Expected goals without penalties and own goals','Expected goals against', 'Difference between expected goals against and missed', 'Expected goals against without penalties and own goals','The difference between "for" and "against" expected goals without penalties and own goals', 'Passes allowed per defensive action in the opposition half','Opponent passes allowed per defensive action in the opposition half','Passes completed within an estimated 20 yards of goal (crosses excluded)', 'Opponent passes completed within an estimated 20 yards of goal (crosses excluded)', 'Expected points','Difference between actual and expected points')
 
-# TODO Spaltennamen hinzufügen####
+#Spalten umbenennen
+colnames(understat) <- c('Liga', 'Jahr', 'Platzierung', 'Team', 'Spiele', 'Siege', 'Unentschieden', 'Niederlagen', 'Tore', 'conceded', 'Punkte', 'xG', 'xG_diff', 'npxG', 'xGA', 'xGA_diff', 'npxGA', 'npxGD', 'ppda_coef','oppda_coef','deep', 'deep_allowed', 'xpts', 'xpts_diff')
+
+understat <- mutate(understat, Liga = replace(Liga, Liga == "La_liga", "La Liga"))
+understat <- mutate(understat, Liga = replace(Liga, Liga == "Ligue_1", "Ligue 1"))
+understat <- mutate(understat, Liga = replace(Liga, Liga == "Serie_A", "Serie A"))
+
+# NUR 2014
+daten2014 <- subset(understat, Jahr == 2014 & Liga != "RFPL", select = c(-Jahr))
+
+daten <- subset(understat, Liga != "RFPL")
+
+
 
 # Auszug anzeigen - ersten 30 Zeilen
-datatable(head(understat, 30), options = list(scrollX = TRUE, columnDefs = list(
-    list(
-      targets = 1,
-      render = JS(
-        "function(data, type, full, meta) {",
-        "  if (type === 'display') {",
-        "    return '<span title="' + full[1] + '">' + data + '</span>';",
-        "  } else {",
-        "    return data;",
-        "  }",
-        "}"
-      )
-    )
-  )
-))
+datatable(
+  format(head(daten, 30), digits = 2),
+  options = list(scrollX = TRUE)
+)
+
+# Liga FARBE
+ligaColor <- c("#D10514","#390240","#F2780C","#00529C","#1188D2")
+
+# Mannschafften FARBE
+#teamColor <- wes_palette("GrandBudapest1", n = 20)
+teamColor <- c("#007566", "#8C1F85", "#BF2A45","#008fd7",               "#118C30", "#D9072D",  "#1B8DCC", "#12233f",                "#0C519C","#F2D022", "#B988BF" , "#73BBF5", "#EECEF2","#C26463",               "#F29325", "#00CCBF", "#F2A2A2","#D94F04", "#8FC1B5", "#D90D1E")
+
 ```
+
+```{r results='asis', echo = FALSE, message=FALSE}
+# Liste erstellen
+list1 <- list("**xG:** Erwartete Tore\n",
+              "**xG_diff:** Erwartete Tordifferenz\n",
+              "**npxG:** Erwartete Tore ohne Strafstöße & Eigentore\n",
+              "**xGA:** Erwartete Gegentore\n",
+              "**xGA_diff:** Differenz zwischen erwarteten & erzielten Gegentoren\n",
+              "**npxGA:** Erwartete Gegentore ohne Strafstöße & Eigentore\n",
+              "**npxGD:** Der Unterschied zwischen erwartete 'Für-' & 'Gegen-' Tore ohne Strafen & Eigentore\n",
+              "**ppda_coef:** Erlaubte Pässe pro Abwehraktion in der gegnerischen Hälfte\n",
+              "**oppda_coef:** Erlaubte gegnerische Pässe pro Verteidigungsaktion in der gegnerischen Hälfte\n",
+              "**deep:** Pässe, die innerhalb von ≈ 18 Metern vor dem Tor treffen (ohne Flanken)\n",
+              "**deep_allowed:** Pässe des Gegners, die innerhalb von ≈ 18 Metern vor dem Tor treffen (ohne Flanken)\n",
+              "**xpts:** Erwartete Punkte\n",
+              "**xpts_diff:** Differenz zwischen tatsächlichen & erwarteten Punkten\n"
+              )
+
+
+for (i in list1) {
+  cat(paste(i, "\n"))
+}
+
+```
+
+
+
+# Analyse
+
+Unser Ziel ist es uns der Frage der besten Liga und der besten Mannschaft des Jahres
+2014 anzunähern. Dabei wollen wir die Attraktivität der Vereine und der Ligen (gefallene
+Tore pro Spiel und die Spannung im Titelrennen) darstellen.
+Außerdem wollen wir die Meister der Ligen vergleichen, um somit den stärksten Meister in
+seiner Liga zu bestimmen.
+Ein weiterer Interessanter Punkt ist die Frage nach dem effektivsten Spielstil. Wurde 2014
+aggressives Pressing belohnt oder waren Teams hauptsächlich durch defensive Stabilität
+erfolgreich?
+Welche Mannschaften waren besonders ineffizient und welche haben unerwartet oft
+getroffen?
+Besonders sind wir gespannt ob der deutsche WM Sieg und der Championsleague Titel
+von Real Madrid sich auch in den Liga Statistiken widerspiegeln?
+
+## Beste Liga 2014 (?)
+
+Blabla
+
+
+### Ligen im Vergleich
+#### {.tabset}
+Vergleich der Bundesligateams bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte
+
+##### Alle Ligen
+```{r, results='asis', echo = FALSE, message=FALSE}
+league_ppda_coef <- daten2014 %>% 
+  group_by(Liga) %>% 
+  summarise(ppda_coef = mean(ppda_coef))
+
+plot_ly(
+  data = league_ppda_coef, 
+  x= ~Liga,
+  y = ~ppda_coef, 
+  type='bar', 
+  marker = list(color = ligaColor),
+  hovertemplate = 'Liga: <b>%{x}</b><br>durchschnittlich erlaubte Pässe: <b>%{y}</b><extra></extra>'
+) %>% 
+layout(
+  title = "Vergleich der Lige bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte",
+  yaxis = list(title = 'Durchschnittlich zugelassene Pässe'),
+  xaxis = list(title ='')
+)
+```
+
+##### Bundesliga
+
+```{r, results='asis', echo = FALSE, message=FALSE}
+inleague_ppda_coef <- daten2014 %>% 
+  filter(Liga =="Bundesliga") %>%
+  mutate(Team = reorder(Team, Platzierung))
+
+# Create a new column "Platzierung_Label" to store the Platzierung as a character string
+inleague_ppda_coef$Platzierung_Label <- as.character(inleague_ppda_coef$Platzierung)
+
+
+plot_ly(
+  data = inleague_ppda_coef, 
+  x= ~Team,
+  y = ~ppda_coef, 
+  type='bar', 
+  marker = list(color = teamColor),
+  hovertemplate = 'Team: <b>%{x}</b><br>durchschnittlich erlaubte Pässe: <b>%{y}</b><br>Platzierung: <b>%{customdata}</b><extra></extra>',
+  customdata = ~Platzierung_Label
+) %>% 
+layout(
+  title = "Vergleich der Bundesligateams bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte",
+  yaxis = list(title = 'Durchschnittlich zugelassene Pässe'),
+  xaxis = list(title ='')
+)
+```
+
+##### EPL
+```{r, results='asis', echo = FALSE, message=FALSE}
+inleague_ppda_coef <- daten2014 %>% 
+  filter(Liga =="EPL") %>%
+  mutate(Team = reorder(Team, Platzierung))
+
+# Create a new column "Platzierung_Label" to store the Platzierung as a character string
+inleague_ppda_coef$Platzierung_Label <- as.character(inleague_ppda_coef$Platzierung)
+
+
+plot_ly(
+  data = inleague_ppda_coef, 
+  x= ~Team,
+  y = ~ppda_coef, 
+  type='bar', 
+  marker = list(color = teamColor),
+  hovertemplate = 'Team: <b>%{x}</b><br>durchschnittlich erlaubte Pässe: <b>%{y}</b><br>Platzierung: <b>%{customdata}</b><extra></extra>',
+  customdata = ~Platzierung_Label
+) %>% 
+layout(
+  title = "Vergleich der Bundesligateams bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte",
+  yaxis = list(title = 'Durchschnittlich zugelassene Pässe'),
+  xaxis = list(title ='')
+)
+```
+
+##### La Liga
+```{r, results='asis', echo = FALSE, message=FALSE}
+inleague_ppda_coef <- daten2014 %>% 
+  filter(Liga =="La Liga") %>%
+  mutate(Team = reorder(Team, Platzierung))
+
+# Create a new column "Platzierung_Label" to store the Platzierung as a character string
+inleague_ppda_coef$Platzierung_Label <- as.character(inleague_ppda_coef$Platzierung)
+
+
+plot_ly(
+  data = inleague_ppda_coef, 
+  x= ~Team,
+  y = ~ppda_coef, 
+  type='bar', 
+  marker = list(color = teamColor),
+  hovertemplate = 'Team: <b>%{x}</b><br>durchschnittlich erlaubte Pässe: <b>%{y}</b><br>Platzierung: <b>%{customdata}</b><extra></extra>',
+  customdata = ~Platzierung_Label
+) %>% 
+layout(
+  title = "Vergleich der Bundesligateams bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte",
+  yaxis = list(title = 'Durchschnittlich zugelassene Pässe'),
+  xaxis = list(title ='')
+)
+```
+
+##### Ligue 1 
+```{r, results='asis', echo = FALSE, message=FALSE}
+inleague_ppda_coef <- daten2014 %>% 
+  filter(Liga =="Ligue 1") %>%
+  mutate(Team = reorder(Team, Platzierung))
+
+# Create a new column "Platzierung_Label" to store the Platzierung as a character string
+inleague_ppda_coef$Platzierung_Label <- as.character(inleague_ppda_coef$Platzierung)
+
+
+plot_ly(
+  data = inleague_ppda_coef, 
+  x= ~Team,
+  y = ~ppda_coef, 
+  type='bar', 
+  marker = list(color = teamColor),
+  hovertemplate = 'Team: <b>%{x}</b><br>durchschnittlich erlaubte Pässe: <b>%{y}</b><br>Platzierung: <b>%{customdata}</b><extra></extra>',
+  customdata = ~Platzierung_Label
+) %>% 
+layout(
+  title = "Vergleich der Bundesligateams bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte",
+  yaxis = list(title = 'Durchschnittlich zugelassene Pässe'),
+  xaxis = list(title ='')
+)
+```
+
+##### Serie A 
+```{r, results='asis', echo = FALSE, message=FALSE}
+inleague_ppda_coef <- daten2014 %>% 
+  filter(Liga =="Serie A") %>%
+  mutate(Team = reorder(Team, Platzierung))
+
+# Create a new column "Platzierung_Label" to store the Platzierung as a character string
+inleague_ppda_coef$Platzierung_Label <- as.character(inleague_ppda_coef$Platzierung)
+
+
+plot_ly(
+  data = inleague_ppda_coef, 
+  x= ~Team,
+  y = ~ppda_coef, 
+  type='bar', 
+  marker = list(color = teamColor),
+  hovertemplate = 'Team: <b>%{x}</b><br>durchschnittlich erlaubte Pässe: <b>%{y}</b><br>Platzierung: <b>%{customdata}</b><extra></extra>',
+  customdata = ~Platzierung_Label
+) %>% 
+layout(
+  title = "Vergleich der Bundesligateams bezüglich durchschnittlich zugelassener Pässe in der Gegnerischen Hälfte",
+  yaxis = list(title = 'Durchschnittlich zugelassene Pässe'),
+  xaxis = list(title ='')
+)
+```
+#### {-}
+
+
+Bla Bla
+
+
+### Platzierung xPlatzierung
+
+
+#### {.tabset}
+
+
+##### La Liga
+
+```{r echo=FALSE, message=FALSE}
+# Tabelle LaLiga 
+laLiga_Platzierung <- daten2014 %>%
+  filter(Liga == "La Liga") %>%
+  select(Team, Platzierung, xpts) %>%
+  mutate(xPlatzierung = rank(-xpts, ties.method = "min"))
+
+# Linien-Diagramm erstellen
+laLiga_Platzierung_plot <- ggplot(laLiga_Platzierung, aes(x = xPlatzierung, y = Platzierung)) +
+  geom_abline(slope = -1)+
+  geom_point(aes(color = Team), size = 2) +
+  labs(x = "erwartete Platzierung", y = "Platzierung", title = "Erwartete gegen tatsächliche Platzierung") +
+  theme_minimal() +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+
+ggplotly(laLiga_Platzierung_plot)
+```
+
+##### EPL
+
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+epl_Platzierung <- daten2014 %>%
+  filter(Liga == "EPL") %>%
+  select(Team, Platzierung, xpts) %>%
+  mutate(xPlatzierung = rank(-xpts, ties.method = "min"))
+
+
+# Linien-Diagramm erstellen
+epl_Platzierung_plot <- ggplot(epl_Platzierung, aes(x = xPlatzierung, y = Platzierung)) +
+  geom_abline(slope = -1)+
+  geom_point(aes(color = Team), size = 2) +
+  labs(x = "erwartete Platzierung", y = "Platzierung", title = "Erwartete gegen tatsächliche Platzierung") +
+  theme_minimal() +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+
+ggplotly(epl_Platzierung_plot)
+
+```
+
+##### Bundesliga
+
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+bundesliga_Platzierung <- daten2014 %>%
+  filter(Liga == "Bundesliga") %>%
+  select(Team, Platzierung, xpts) %>%
+  mutate(xPlatzierung = rank(-xpts, ties.method = "min"))
+
+
+# Linien-Diagramm erstellen
+bundesliga_Platzierung_plot <- ggplot(bundesliga_Platzierung, aes(x = xPlatzierung, y = Platzierung)) +
+  geom_abline(slope = -1)+
+  geom_point(aes(color = Team), size = 2) +
+  labs(x = "erwartete Platzierung", y = "Platzierung", title = "Erwartete gegen tatsächliche Platzierung") +
+  theme_minimal() +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+ggplotly(bundesliga_Platzierung_plot)
+
+```
+
+##### Serie A
+
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+serieA_Platzierung <- daten2014 %>%
+  filter(Liga == "Serie A") %>%
+  select(Team, Platzierung, xpts) %>%
+  mutate(xPlatzierung = rank(-xpts, ties.method = "min"))
+
+
+# Linien-Diagramm erstellen
+serieA_Platzierung_plot <- ggplot(serieA_Platzierung, aes(x = xPlatzierung, y = Platzierung)) +
+  geom_abline(slope = -1)+
+  geom_point(aes(color = Team), size = 2) +
+  labs(x = "erwartete Platzierung", y = "Platzierung", title = "Erwartete gegen tatsächliche Platzierung") +
+  theme_minimal()+
+  scale_y_reverse()
+
+ggplotly(serieA_Platzierung_plot)
+
+```
+
+##### Ligue 1
+
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+ligue1_Platzierung <- daten2014 %>%
+  filter(Liga == "Ligue 1") %>%
+  select(Team, Platzierung, xpts) %>%
+  mutate(xPlatzierung = rank(-xpts, ties.method = "min"))
+
+
+# Linien-Diagramm erstellen
+ligue1_Platzierung_plot <- ggplot(ligue1_Platzierung, aes(x = xPlatzierung, y = Platzierung)) +
+  scale_y_reverse()+
+  geom_abline(slope = -1)+
+  geom_point(aes(color = Team), size = 2) +
+  labs(x = "erwartete Platzierung", y = "Platzierung", title = "Erwartete gegen tatsächliche Platzierung") +
+  theme_minimal() +
+  scale_color_manual(values = teamColor)
+
+ggplotly(ligue1_Platzierung_plot)
+
+```
+
+#### {-}
+
+
+## Meisterentwicklung in den Ligen
+
+#### {.tabset}
+##### La Liga
+```{r echo=FALSE, message=FALSE}
+# DurchschnittsPlatzierung
+LaLiga_avgPlatzierung <- daten %>%
+  filter(Liga == "La Liga") %>%
+  group_by(Team) %>%
+  summarise(avgPlatzierung = mean(Platzierung)) %>%
+  arrange(avgPlatzierung)
+
+# Beste DurchschnittsPlatzierung(ersten 5)
+laLiga_best5 <- head(LaLiga_avgPlatzierung$Team, 5)
+
+# Tabelle mit 5 besten
+laLiga_best5_Year <- daten %>%
+  filter(Liga == "La Liga") %>%
+  filter(Team %in% laLiga_best5)
+
+# Erstelle den Graph für den Wechsel der Platzierung über die Jahre für jedes Team
+laLiga_best5_Year_Platzierung_plot <- ggplot(laLiga_best5_Year, aes(x = Jahr, y = Platzierung, color = Team)) +
+  geom_line() +
+  labs(x = "", y = "Platzierung", title = "Wechsel der Platzierung über die Jahre nach Team") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(min(laLiga_best5_Year$Platzierung), max(laLiga_best5_Year$Platzierung), 1)) +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+# Print
+ggplotly(laLiga_best5_Year_Platzierung_plot)
+```
+
+##### EPL
+```{r echo=FALSE, message=FALSE}
+# DurchschnittsPlatzierung
+avgPlatzierung <- daten %>%
+  filter(Liga == "EPL") %>%
+  group_by(Team) %>%
+  summarise(avg_Platzierung = mean(Platzierung)) %>%
+  arrange(avg_Platzierung)
+
+# Beste DurchschnittsPlatzierung(ersten 5)
+best5 <- head(avgPlatzierung$Team, 5)
+
+# Tabelle mit 5 besten
+best5_Year <- daten %>%
+  filter(Liga == "EPL") %>%
+  filter(Team %in% best5)
+
+# Erstelle den Graph für den Wechsel der Platzierung über die Jahre für jedes Team
+best5_Year_Platzierung_plot <- ggplot(best5_Year, aes(x = Jahr, y = Platzierung, color = Team)) +
+  geom_line() +
+  labs(x = "", y = "Platzierung", title = "Wechsel der Platzierung über die Jahre nach Team") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(min(best5_Year$Platzierung), max(best5_Year$Platzierung), 1)) +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+# Print
+ggplotly(best5_Year_Platzierung_plot)
+```
+
+##### Bundesliga
+```{r echo=FALSE, message=FALSE}
+# DurchschnittsPlatzierung
+avgPlatzierung <- daten %>%
+  filter(Liga == "Bundesliga") %>%
+  group_by(Team) %>%
+  summarise(avg_Platzierung = mean(Platzierung)) %>%
+  arrange(avg_Platzierung)
+
+# Beste DurchschnittsPlatzierung(ersten 5)
+best5 <- head(avgPlatzierung$Team, 5)
+
+# Tabelle mit 5 besten
+best5_Year <- daten %>%
+  filter(Liga == "Bundesliga") %>%
+  filter(Team %in% best5)
+
+# Erstelle den Graph für den Wechsel der Platzierung über die Jahre für jedes Team
+best5_Year_Platzierung_plot <- ggplot(best5_Year, aes(x = Jahr, y = Platzierung, color = Team)) +
+  geom_line() +
+  labs(x = "", y = "Platzierung", title = "Wechsel der Platzierung über die Jahre nach Team") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(min(best5_Year$Platzierung), max(best5_Year$Platzierung), 1)) +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+# Print
+ggplotly(best5_Year_Platzierung_plot)
+```
+
+##### Serie A
+```{r echo=FALSE, message=FALSE}
+# DurchschnittsPlatzierung
+avgPlatzierung <- daten %>%
+  filter(Liga == "Serie A") %>%
+  group_by(Team) %>%
+  summarise(avg_Platzierung = mean(Platzierung)) %>%
+  arrange(avg_Platzierung)
+
+# Beste DurchschnittsPlatzierung(ersten 5)
+best5 <- head(avgPlatzierung$Team, 5)
+
+# Tabelle mit 5 besten
+best5_Year <- daten %>%
+  filter(Liga == "Serie A") %>%
+  filter(Team %in% best5)
+
+# Erstelle den Graph für den Wechsel der Platzierung über die Jahre für jedes Team
+best5_Year_Platzierung_plot <- ggplot(best5_Year, aes(x = Jahr, y = Platzierung, color = Team)) +
+  geom_line() +
+  labs(x = "", y = "Platzierung", title = "Wechsel der Platzierung über die Jahre nach Team") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(min(best5_Year$Platzierung), max(best5_Year$Platzierung), 1)) +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+# Print
+ggplotly(best5_Year_Platzierung_plot)
+```
+
+##### Ligue 1
+```{r echo=FALSE, message=FALSE}
+# DurchschnittsPlatzierung
+avgPlatzierung <- daten %>%
+  filter(Liga == "Ligue 1") %>%
+  group_by(Team) %>%
+  summarise(avg_Platzierung = mean(Platzierung)) %>%
+  arrange(avg_Platzierung)
+
+# Beste DurchschnittsPlatzierung(ersten 5)
+best5 <- head(avgPlatzierung$Team, 5)
+
+# Tabelle mit 5 besten
+best5_Year <- daten %>%
+  filter(Liga == "Ligue 1") %>%
+  filter(Team %in% best5)
+
+# Erstelle den Graph für den Wechsel der Platzierung über die Jahre für jedes Team
+best5_Year_Platzierung_plot <- ggplot(best5_Year, aes(x = Jahr, y = Platzierung, color = Team)) +
+  geom_line() +
+  labs(x = "", y = "Platzierung", title = "Wechsel der Platzierung über die Jahre nach Team") +
+  theme_minimal() +
+  scale_y_continuous(breaks = seq(min(best5_Year$Platzierung), max(best5_Year$Platzierung), 1)) +
+  scale_color_manual(values = teamColor)+
+  scale_y_reverse()
+
+# Print
+ggplotly(best5_Year_Platzierung_plot)
+```
+
+#### {-}
+
+
+
+
+## Pressingsentwicklung der Meister
+
+#### {.tabset}
+##### Pressingentwicklung
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+league_ppda <- daten %>%
+  select(Liga, Jahr, ppda_coef) %>%
+  group_by(Jahr, Liga) %>%
+  mutate(a_ppda = mean(ppda_coef))
+
+
+# Linien-Diagramm erstellen
+league_ppda_plot <- ggplot(league_ppda, aes(x = Jahr, y = a_ppda)) +
+  geom_abline()+
+  geom_line(aes(color = Liga), linewidth = 1) +
+  labs(x = "", y = "Durchschnittlich zugelassene Pässe", title = "Pressingentwicklung") +
+  theme_minimal() +
+  scale_color_manual(values = ligaColor)  # Festlegen der benutzerdefinierten Farben
+
+
+ggplotly(league_ppda_plot)
+```
+
+##### Pressingsentwicklung der Meister
+
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+first_ppda <- daten %>%
+  filter(Platzierung == 1) %>%
+  select(Liga, Jahr, Team, ppda_coef) %>%
+  group_by(Liga)
+
+
+# Linien-Diagramm erstellen
+first_ppda_plot <- ggplot(first_ppda, aes(x = Jahr, y = ppda_coef, label = Team)) +
+  geom_abline()+
+  geom_line(aes(color = Liga), linewidth = 1) +
+  labs(x = "", y = "Durchschnittlich zugelassene Pässe", title = "Pressingentwicklung") +
+  theme_minimal()+
+  scale_color_manual(values = ligaColor)  # Festlegen der benutzerdefinierten Farben
+
+ggplotly(first_ppda_plot)
+```
+
+##### Korrelation Pressingentwicklung
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+league_ppda <- daten %>%
+  select(Liga,Platzierung, Jahr, ppda_coef) %>%
+  group_by(Jahr, Liga) %>%
+  mutate(cor_ppda = cor(Platzierung,ppda_coef))
+
+
+
+# Linien-Diagramm erstellen
+league_ppda_plot <- ggplot(league_ppda, aes(x = Jahr, y = cor_ppda)) +
+  geom_abline()+
+  geom_line(aes(color = Liga), linewidth = 1) +
+  labs(x = "", y = "Korrelationskoeffizient", title = "Pressingentwicklung") +
+  theme_minimal()+
+  scale_color_manual(values = ligaColor)  # Festlegen der benutzerdefinierten Farben
+
+ggplotly(league_ppda_plot)
+
+```
+
+ab 0,1 (schwach),
+ab 0,3 (mittel) und
+ab 0,5 (stark).
+
+#### {-}
+
+
+#### {.tabset}
+##### Ligenübersicht erwartete Tore
+```{r, results='asis', echo = FALSE, message=FALSE}
+league_xgs <- daten2014 %>% 
+  group_by(Liga) %>% 
+  summarise(xG = mean(xG))
+
+plot_ly(
+  data = league_xgs, 
+  x= ~Liga,
+  y = ~xG, 
+  type='bar', 
+  marker = list(color = ligaColor),
+  hovertemplate = 'Liga: <b>%{x}</b><br>erwartete Tore: <b>%{y}</b><extra></extra>'
+) %>% 
+layout(
+  title = "2014 Erwartete Tore der Ligen",
+  xaxis = list(title = ''),
+  yaxis = list(title = 'Durchschnittlich erwartete Tore')
+)
+```
+
+
+
+##### Torerwartungsentwicklung
+```{r echo=FALSE, message=FALSE}
+# Tabelle EPL 
+time_xG <- daten %>%
+  select(Liga, Jahr, xG, Tore) %>%
+  group_by(Jahr, Liga) %>%
+  summarise(a_xG = mean(xG), a_scored = mean(Tore))
+
+
+# Linien-Diagramm erstellen
+time_xG_plot <- ggplot(time_xG, aes(x = Jahr, y = a_xG)) +
+  geom_abline()+
+  geom_line(aes(color = Liga), linewidth = 1) +
+  #geom_bar(aes(y = a_scored, fill = Liga), stat = "identity", Platzierung = "dodge", alpha = 0.8) +
+  labs(x = "", y = "Erwartete Tore", title = "Entwicklung der erwarteten Tore") +
+  theme_minimal() +
+  scale_color_manual(values = ligaColor) #+  # Festlegen der benutzerdefinierten Farben
+  #scale_fill_manual(values = ligaColor)
+
+
+ggplotly(time_xG_plot)
+
+```
+
+#### {-}
+
+
+
+
+
+## Beste Mannschaft 2014
+
+BlaBla
+
+## Effektivster Spielstil
+Wurde 2014 aggressives Pressing belohnt oder waren Teams hauptsächlich durch defensive Stabilität
+erfolgreich?
+Welche Mannschaften waren besonders ineffizient und welche haben unerwartet oft
+getroffen?
+
+
+## deutsche WM Sieg und Championsleague Titelvon Real Madrid
+
+
+
+
+# Muss noch rein
+
+## kurze Betrachtung der verwendeten Werkzeuge
+Welche + Warum + Schwächen + Stärken
+
+
+## kritischer Rückblick
+würden Sie mit dem Wissen nach dem Projekt
+andere Ansätze vorziehen?
+
+## verworfene Lösungsansätze
+gab es Lösungsansätze, die Sie verworfen haben? Wenn ja, beschreiben Sie
+diese Ansätze und erläutern Sie die Gründe, warum Sie sie nicht mehr weiter
+verfolgt haben!
+
+## Literatur und Quellen
+
+## Arbeitszeit in Stunden
